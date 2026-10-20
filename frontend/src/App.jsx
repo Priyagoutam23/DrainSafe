@@ -1,4 +1,5 @@
 import { useState } from "react";
+import StatCard from "./components/StatCard";
 function App() {
   const [reports, setReports] = useState([
     {
@@ -124,35 +125,27 @@ function App() {
           </div>
 
           {/* Summary cards */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">
-                Registered assets
-              </p>
-              <p className="mt-3 text-3xl font-bold">128</p>
-              <p className="mt-2 text-sm text-slate-500">
-                Sample drainage records
-              </p>
-            </div>
+<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+  <StatCard
+    title="Registered assets"
+    value="128"
+    description="Sample drainage records"
+  />
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">Open reports</p>
-              <p className="mt-3 text-3xl font-bold">18</p>
-              <p className="mt-2 text-sm text-amber-700">
-                Awaiting review or action
-              </p>
-            </div>
+  <StatCard
+    title="Open reports"
+    value="18"
+    description="Awaiting review or action"
+    tone="amber"
+  />
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">
-                Repeat-failure alerts
-              </p>
-              <p className="mt-3 text-3xl font-bold">7</p>
-              <p className="mt-2 text-sm text-rose-700">
-                Potential recurring problems
-              </p>
-            </div>
-          </div>
+  <StatCard
+    title="Repeat-failure alerts"
+    value="7"
+    description="Potential recurring problems"
+    tone="rose"
+  />
+</div>
 
           {/* Next section placeholder */}
           <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
