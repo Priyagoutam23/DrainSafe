@@ -1,45 +1,112 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import StatCard from "./components/StatCard";
 import ReportsTable from "./components/ReportsTable";
+import ReportForm from "./components/ReportForm";
 function App() {
-  const [reports, setReports] = useState([
-    {
-      id: "DS-001",
-      assetId: "DR-001",
-      location: "Sample Ward 04",
-      issue: "Blocked drain",
-      status: "Open",
-    },
-    {
-      id: "DS-002",
-      assetId: "DR-014",
-      location: "Sample Ward 07",
-      issue: "Overflow",
-      status: "Under Review",
-    },
-    {
-      id: "DS-003",
-      assetId: "DR-021",
-      location: "Sample Ward 02",
-      issue: "Damaged cover",
-      status: "In Progress",
-    },
-    {
-      id: "DS-004",
-      assetId: "DR-008",
-      location: "Sample Ward 05",
-      issue: "Repeat blockage",
-      status: "Resolved",
-    },
-  ]);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [updateError, setUpdateError] = useState("");
+  const [createError, setCreateError] = useState("");
+  const [createSuccess, setCreateSuccess] = useState("");
 
+  //data fetching from backend
+  useEffect(() => {
+    const loadReports = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/reports");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch reports");
+        }
+
+        const result = await response.json();
+        setReports(result.data);
+      } catch (err) {
+        console.error("Error fetching reports:", err);
+        setError("Could not load reports. Check the backend server.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadReports();
+  }, []);
   //{ ...report, status: "Resolved" } ka matlab hai purane report object ki baaki properties preserve karna aur sirf status ko change karna.
-  const markResolved = (reportId) => {
-    setReports((currentReports) =>
-      currentReports.map((report) =>
-        report.id === reportId ? { ...report, status: "Resolved" } : report,
-      ),
-    );
+  const markResolved = async (reportId) => {
+    setUpdateError("");
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/reports/${reportId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "Resolved",
+          }),
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to update report");
+      }
+
+      setReports((currentReports) =>
+        currentReports.map((report) =>
+          report.id === reportId ? result.data : report,
+        ),
+      );
+    } catch (err) {
+      console.error("Error updating report:", err);
+      setUpdateError(
+        "Could not update the report. Check the backend and try again.",
+      );
+    }
+  };
+
+  const openReportsCount = reports.filter(
+    (report) => report.status != "Resolved",
+  ).length;
+
+  const resolvedReportsCount = reports.filter(
+    (report) => report.status === "Resolved",
+  ).length;
+
+  const handleCreateReport = async (newReport) => {
+    setCreateError("");
+    setCreateSuccess("");
+
+    try {
+      const response = await fetch("http://localhost:5000/api/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newReport),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to create report");
+      }
+
+      setReports((currentReports) => [...currentReports, result.data]);
+
+      setCreateSuccess(`Report ${result.data.id} created successfully.`);
+
+      return true;
+    } catch (err) {
+      console.error("Error creating report:", err);
+      setCreateError(err.message || "Could not create the report.");
+
+      return false;
+    }
   };
 
   return (
@@ -126,33 +193,52 @@ function App() {
           </div>
 
           {/* Summary cards */}
-<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-  <StatCard
-    title="Registered assets"
-    value="128"
-    description="Sample drainage records"
-  />
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <StatCard
+              title="Registered assets"
+              value="128"
+              description="Sample drainage records"
+            />
 
-  <StatCard
-    title="Open reports"
-    value="18"
-    description="Awaiting review or action"
-    tone="amber"
-  />
+            <StatCard
+              title="Open reports"
+              value={openReportsCount}
+              description="Awaiting review or action"
+              tone="amber"
+            />
 
-  <StatCard
-    title="Repeat-failure alerts"
-    value="7"
-    description="Potential recurring problems"
-    tone="rose"
-  />
-</div>
+            <StatCard
+              title="Repeat-failure alerts"
+              value="7"
+              description="Potential recurring problems"
+              tone="rose"
+            />
+
+            <StatCard
+              title="Resolved Reports"
+              value={resolvedReportsCount}
+              description="Successfully closed issues"
+            />
+          </div>
+          {/* to display in dashboard */}
+          <ReportForm onCreateReport={handleCreateReport} />
 
           {/* Next section placeholder */}
-     <ReportsTable
-  reports={reports}
-  onMarkResolved={markResolved}
-/>
+          {updateError && (
+            <p role="alert" className="mt-4 text-sm text-rose-700">
+              {updateError}
+            </p>
+          )}
+
+          {loading ? (
+            <p className="mt-8 text-sm text-slate-500">Loading reports...</p>
+          ) : error ? (
+            <p role="alert" className="mt-8 text-sm text-rose-700">
+              {error}
+            </p>
+          ) : (
+            <ReportsTable reports={reports} onMarkResolved={markResolved} />
+          )}
         </main>
       </div>
     </div>
