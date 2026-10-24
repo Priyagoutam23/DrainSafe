@@ -1,6 +1,7 @@
 // Pehli line Express import karti hai; doosri ek router object banati hai.
 const express = require("express");
 const router = express.Router();
+const pool = require("../db");
 const reports = [
   {
     id: "DS-001",
@@ -35,37 +36,57 @@ const reports = [
 // Get all drainage reports
 // "/" hi kyun?
 // Baad mein hum index.js mein router ko /api/reports path par mount karenge. Isliye router ke andar "/" ka matlab hoga GET /api/reports.
-router.get("/", (req, res) => {
-  res.json({
-    success: true,
-    count: reports.length,
-    data: reports,
-  });
+router.get("/", async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, asset_id AS "assetId", location, issue, status FROM reports ORDER BY id',
+    );
+
+    res.json({
+      success: true,
+      count: reports.length,
+      data: reports,
+    });
+  } catch (error) {
+    console.status("Error fetching reports:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "failed to fetch reports",
+    });
+  }
 });
 
 // Get all drainage reports
 // index.js mein hum baad mein router ko /api/reports path par connect karenge. Isliye router ke andar "/" ka matlab hoga:
 // Create a new drainage report
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { assetId, location, issue } = req.body;
 
   // Validate required fields
-  if (
-    !assetId?.trim() ||
-    !location?.trim() ||
-    !issue?.trim()
-  ) {
+  if (!assetId?.trim() || !location?.trim() || !issue?.trim()) {
     return res.status(400).json({
       success: false,
       message: "Asset ID, location, and issue are required.",
     });
   }
 
-  const nextNumber =
-    reports.reduce((max, report) => {
-      const number = Number(report.id.replace("DS-", ""));
-      return Math.max(max, number);
-    }, 0) + 1;
+  //   const nextNumber =
+  //     reports.reduce((max, report) => {
+  //       const number = Number(report.id.replace("DS-", ""));
+  //       return Math.max(max, number);
+  //     }, 0) + 1;
+
+  const idResult = await pool.query(`
+  SELECT COALESCE(
+    MAX(CAST(SUBSTRING(id FROM 4) AS INTEGER)),
+    0
+  ) + 1 AS next_number
+  FROM reports
+  WHERE id ~ '^DS-[0-9]+$'
+`);
+
+  const nextNumber = Number(idResult.rows[0].next_number);
 
   const newReport = {
     id: `DS-${String(nextNumber).padStart(3, "0")}`,
@@ -75,19 +96,27 @@ router.post("/", (req, res) => {
     status: "Open",
   };
 
-  reports.push(newReport);
+  const insertResult = await pool.query(
+    `INSERT INTO reports (id, asset_id, location, issue, status)
+   VALUES ($1, $2, $3, $4, $5)
+   RETURNING id, asset_id AS "assetId", location, issue, status`,
+    [
+      newReport.id,
+      newReport.assetId,
+      newReport.location,
+      newReport.issue,
+      newReport.status,
+    ],
+  );
 
   res.status(201).json({
     success: true,
-    data: newReport,
+    data: insertResult.rows[0],
   });
-}); 
-
-
-
+});
 
 //api endpoint of reports
-router.patch("/:id/status", (req, res) => {
+router.patch("/:id/status", async (req, res) => {
   const reportId = req.params.id;
   const { status } = req.body;
 
@@ -98,28 +127,39 @@ router.patch("/:id/status", (req, res) => {
     });
   }
 
-  const report = reports.find((item) => item.id === reportId);
+  try {
+    const result = await pool.query(
+      `UPDATE reports
+     SET status = $1
+     WHERE id = $2
+     RETURNING id, asset_id AS "assetId", location, issue, status`,
+      [status, reportId],
+    );
 
-  if (!report) {
-    return res.status(404).json({
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error updating report:", error);
+
+    return res.status(500).json({
       success: false,
-      message: "Report not found",
+      message: "Failed to update report",
     });
   }
-
-  report.status = status;
-
-  res.json({
-    success: true,
-    data: report,
-  });
 });
 
 module.exports = router;
 
-
-
-// file structure 
+// file structure
 // Express import
 // Router creation
 // Reports array
@@ -127,17 +167,3 @@ module.exports = router;
 // router.post("/")
 // router.patch("/:id/status")
 // module.exports = router
-
-
-
-
-
-
-
-
-
-
-
-
-
-
