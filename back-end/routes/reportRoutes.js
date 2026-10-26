@@ -65,7 +65,14 @@ router.post("/", async (req, res) => {
   const { assetId, location, issue } = req.body;
 
   // Validate required fields
-  if (!assetId?.trim() || !location?.trim() || !issue?.trim()) {
+  if (
+    typeof assetId !== "string" ||
+    !assetId?.trim() ||
+    typeof location !== "string" ||
+    !location?.trim() ||
+    typeof issue !== "string" ||
+    !issue?.trim()
+  ) {
     return res.status(400).json({
       success: false,
       message: "Asset ID, location, and issue are required.",
