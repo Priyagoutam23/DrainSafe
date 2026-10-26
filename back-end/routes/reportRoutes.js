@@ -2,36 +2,37 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
-const reports = [
-  {
-    id: "DS-001",
-    assetId: "DR-001",
-    location: "Sample Ward 04",
-    issue: "Blocked drain",
-    status: "Open",
-  },
-  {
-    id: "DS-002",
-    assetId: "DR-014",
-    location: "Sample Ward 07",
-    issue: "Overflow",
-    status: "Under Review",
-  },
-  {
-    id: "DS-003",
-    assetId: "DR-021",
-    location: "Sample Ward 02",
-    issue: "Damaged cover",
-    status: "In Progress",
-  },
-  {
-    id: "DS-004",
-    assetId: "DR-008",
-    location: "Sample Ward 05",
-    issue: "Repeat blockage",
-    status: "Resolved",
-  },
-];
+
+// const reports = [
+//   {
+//     id: "DS-001",
+//     assetId: "DR-001",
+//     location: "Sample Ward 04",
+//     issue: "Blocked drain",
+//     status: "Open",
+//   },
+//   {
+//     id: "DS-002",
+//     assetId: "DR-014",
+//     location: "Sample Ward 07",
+//     issue: "Overflow",
+//     status: "Under Review",
+//   },
+//   {
+//     id: "DS-003",
+//     assetId: "DR-021",
+//     location: "Sample Ward 02",
+//     issue: "Damaged cover",
+//     status: "In Progress",
+//   },
+//   {
+//     id: "DS-004",
+//     assetId: "DR-008",
+//     location: "Sample Ward 05",
+//     issue: "Repeat blockage",
+//     status: "Resolved",
+//   },
+// ];
 
 // Get all drainage reports
 // "/" hi kyun?
@@ -44,11 +45,11 @@ router.get("/", async (req, res) => {
 
     res.json({
       success: true,
-      count: reports.length,
-      data: reports,
+      count: result.rows.length,
+      data: result.rows,
     });
   } catch (error) {
-    console.status("Error fetching reports:", error);
+    console.error("Error fetching reports:", error);
 
     res.status(500).json({
       success: false,
