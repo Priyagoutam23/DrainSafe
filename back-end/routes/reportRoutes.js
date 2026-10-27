@@ -79,13 +79,10 @@ router.post("/", async (req, res) => {
     });
   }
 
-  //   const nextNumber =
-  //     reports.reduce((max, report) => {
-  //       const number = Number(report.id.replace("DS-", ""));
-  //       return Math.max(max, number);
-  //     }, 0) + 1;
 
-  const idResult = await pool.query(`
+
+  try {
+    const idResult = await pool.query(`
   SELECT COALESCE(
     MAX(CAST(SUBSTRING(id FROM 4) AS INTEGER)),
     0
@@ -94,33 +91,41 @@ router.post("/", async (req, res) => {
   WHERE id ~ '^DS-[0-9]+$'
 `);
 
-  const nextNumber = Number(idResult.rows[0].next_number);
+    const nextNumber = Number(idResult.rows[0].next_number);
 
-  const newReport = {
-    id: `DS-${String(nextNumber).padStart(3, "0")}`,
-    assetId: assetId.trim(),
-    location: location.trim(),
-    issue: issue.trim(),
-    status: "Open",
-  };
+    const newReport = {
+      id: `DS-${String(nextNumber).padStart(3, "0")}`,
+      assetId: assetId.trim(),
+      location: location.trim(),
+      issue: issue.trim(),
+      status: "Open",
+    };
 
-  const insertResult = await pool.query(
-    `INSERT INTO reports (id, asset_id, location, issue, status)
+    const insertResult = await pool.query(
+      `INSERT INTO reports (id, asset_id, location, issue, status)
    VALUES ($1, $2, $3, $4, $5)
    RETURNING id, asset_id AS "assetId", location, issue, status`,
-    [
-      newReport.id,
-      newReport.assetId,
-      newReport.location,
-      newReport.issue,
-      newReport.status,
-    ],
-  );
+      [
+        newReport.id,
+        newReport.assetId,
+        newReport.location,
+        newReport.issue,
+        newReport.status,
+      ],
+    );
 
-  res.status(201).json({
-    success: true,
-    data: insertResult.rows[0],
-  });
+    res.status(201).json({
+      success: true,
+      data: insertResult.rows[0],
+    });
+  } catch (error) {
+    console.error("Error creating report:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create report",
+    });
+  }
 });
 
 //api endpoint of reports
