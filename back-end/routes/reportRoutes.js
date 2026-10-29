@@ -79,17 +79,10 @@ router.post("/", async (req, res) => {
     });
   }
 
-
-
   try {
-    const idResult = await pool.query(`
-  SELECT COALESCE(
-    MAX(CAST(SUBSTRING(id FROM 4) AS INTEGER)),
-    0
-  ) + 1 AS next_number
-  FROM reports
-  WHERE id ~ '^DS-[0-9]+$'
-`);
+    const idResult = await pool.query(
+      "SELECT nextval('report_id_seq') AS next_number",
+    );
 
     const nextNumber = Number(idResult.rows[0].next_number);
 
