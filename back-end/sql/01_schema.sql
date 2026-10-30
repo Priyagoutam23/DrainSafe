@@ -9,3 +9,4 @@ CREATE TABLE IF NOT EXISTS reports (
         CHECK (status IN ('Open', 'Under Review', 'In Progress', 'Resolved')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
