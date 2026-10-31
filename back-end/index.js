@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const reportRoutes = require("./routes/reportRoutes");
+const assetRoutes = require("./routes/assetRoutes");
 
 
 // app humara Express application hai. Isse hum routes define karenge aur server start karenge.
@@ -27,7 +28,11 @@ app.get("/api/health", (req, res) => {
 });
 
 //Ye router ko /api/reports base path deta hai.
+// require() — doosri file se router import karta hai.
+// app.use() — us router ko URL path se connect karta hai.
 app.use("/api/reports", reportRoutes);
+
+app.use("/api/assets", assetRoutes);
 
 
 

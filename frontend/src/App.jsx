@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import StatCard from "./components/StatCard";
 import ReportsTable from "./components/ReportsTable";
 import ReportForm from "./components/ReportForm";
+import AssetsTable from "./components/AssetsTable";
+import RepeatFailureTable from "./components/RepeatFailureTable";
+
 function App() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,6 +12,49 @@ function App() {
   const [updateError, setUpdateError] = useState("");
   const [createError, setCreateError] = useState("");
   const [createSuccess, setCreateSuccess] = useState("");
+  //Assets ke liye state banao
+  const [assets, setAssets] = useState([]);
+  const [assetsLoading, setAssetsLoading] = useState(true);
+  const [assetsError, setAssetsError] = useState("");
+  //state for repeat-failers
+  const [repeatFailures, setRepeatFailures] = useState([]);
+  const [repeatLoading, setRepeatLoading] = useState(true);
+  const [repeatError, setRepeatError] = useState("");
+
+  const [assetUpdateError, setAssetUpdateError] = useState("");
+
+  //Update condition directly from dashboard
+  const handleUpdateAssetCondition = async (assetId, condition) => {
+    setAssetUpdateError("");
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/assets/${assetId}/condition`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ condition }),
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to update condition");
+      }
+
+      setAssets((currentAssets) =>
+        currentAssets.map((asset) =>
+          asset.assetId === assetId ? { ...asset, ...result.data } : asset,
+        ),
+      );
+    } catch (err) {
+      console.error("Error updating asset condition:", err);
+      setAssetUpdateError(err.message || "Could not update asset condition.");
+    }
+  };
 
   //data fetching from backend
   useEffect(() => {
@@ -31,6 +77,54 @@ function App() {
     };
 
     loadReports();
+  }, []);
+
+  useEffect(() => {
+    const loadAssets = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/assets");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch assets");
+        }
+
+        const result = await response.json();
+
+        setAssets(result.data);
+      } catch (err) {
+        console.error("Error fetching assets:", err);
+        setAssetsError("Could not load assets.");
+      } finally {
+        setAssetsLoading(false);
+      }
+    };
+
+    loadAssets();
+  }, []);
+
+  //Fetch repeat-failure data
+  useEffect(() => {
+    const loadRepeatFailures = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/reports/repeat-failures",
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch repeat failures");
+        }
+
+        const result = await response.json();
+        setRepeatFailures(result.data);
+      } catch (err) {
+        console.error("Error fetching repeat failures:", err);
+        setRepeatError("Could not load repeat-failure alerts.");
+      } finally {
+        setRepeatLoading(false);
+      }
+    };
+
+    loadRepeatFailures();
   }, []);
   //{ ...report, status: "Resolved" } ka matlab hai purane report object ki baaki properties preserve karna aur sirf status ko change karna.
   const markResolved = async (reportId) => {
@@ -196,9 +290,11 @@ function App() {
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
             <StatCard
               title="Registered assets"
-              value="128"
-              description="Sample drainage records"
+              value={assetsLoading ? "..." : assets.length}
+              description="Assets registered in database"
             />
+            {/* summary cards ke just neeche error display karne ke liye: */}
+            {assetsError && <p className="mt-3 text-rose-700">{assetsError}</p>}
 
             <StatCard
               title="Open reports"
@@ -209,8 +305,8 @@ function App() {
 
             <StatCard
               title="Repeat-failure alerts"
-              value="7"
-              description="Potential recurring problems"
+              value={repeatLoading ? "..." : repeatFailures.length}
+              description="Recurring drainage problems"
               tone="rose"
             />
 
@@ -220,6 +316,31 @@ function App() {
               description="Successfully closed issues"
             />
           </div>
+
+          {assetsLoading ? (
+            <p className="mt-6 text-sm text-slate-500">Loading assets...</p>
+          ) : assetsError ? null : (
+            <>
+              <AssetsTable
+                assets={assets}
+                onUpdateCondition={handleUpdateAssetCondition}
+              />
+              {assetUpdateError && (
+                <p className="mt-3 text-sm text-rose-700">{assetUpdateError}</p>
+              )}
+            </>
+          )}
+
+          {repeatLoading ? (
+            <p className="mt-6 text-sm text-slate-500">
+              Loading repeat-failure alerts...
+            </p>
+          ) : repeatError ? (
+            <p className="mt-6 text-sm text-rose-700">{repeatError}</p>
+          ) : (
+            <RepeatFailureTable repeatFailures={repeatFailures} />
+          )}
+
           {/* to display in dashboard */}
           <ReportForm onCreateReport={handleCreateReport} />
 

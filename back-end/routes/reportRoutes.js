@@ -147,18 +147,52 @@ router.patch("/:id/status", async (req, res) => {
         success: false,
         message: "Report not found",
       });
+      ś;
     }
+    ś;
 
     return res.json({
       success: true,
       data: result.rows[0],
     });
+    śś;
   } catch (error) {
     console.error("Error updating report:", error);
 
     return res.status(500).json({
       success: false,
       message: "Failed to update report",
+    });
+  }
+});
+
+//Build the Repeat-Failure API
+// Get repeat-failure reports
+router.get("/repeat-failures", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        asset_id AS "assetId",
+        location,
+        MIN(issue) AS issue,
+        COUNT(*)::int AS "reportCount"
+      FROM reports
+      GROUP BY asset_id, location, LOWER(TRIM(issue))
+      HAVING COUNT(*) >= 2
+      ORDER BY COUNT(*) DESC
+    `);
+
+    res.json({
+      success: true,
+      count: result.rows.length,
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error("Error fetching repeat failures:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch repeat failures",
     });
   }
 });
