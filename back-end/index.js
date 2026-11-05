@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const reportRoutes = require("./routes/reportRoutes");
 const assetRoutes = require("./routes/assetRoutes");
-
+const maintenanceRoutes = require("./routes/maintenanceRoutes");
 
 // app humara Express application hai. Isse hum routes define karenge aur server start karenge.
 const app = express();
@@ -17,8 +17,6 @@ app.use(
 // Allow the server to read JSON request bodies
 app.use(express.json());
 
-
-
 // Health-check API
 app.get("/api/health", (req, res) => {
   res.json({
@@ -31,10 +29,8 @@ app.get("/api/health", (req, res) => {
 // require() — doosri file se router import karta hai.
 // app.use() — us router ko URL path se connect karta hai.
 app.use("/api/reports", reportRoutes);
-
 app.use("/api/assets", assetRoutes);
-
-
+app.use("/api/maintenance", maintenanceRoutes);
 
 // Start the server
 app.listen(PORT, () => {

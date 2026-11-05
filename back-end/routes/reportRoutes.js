@@ -147,15 +147,11 @@ router.patch("/:id/status", async (req, res) => {
         success: false,
         message: "Report not found",
       });
-      ś;
     }
-    ś;
-
     return res.json({
       success: true,
       data: result.rows[0],
     });
-    śś;
   } catch (error) {
     console.error("Error updating report:", error);
 
