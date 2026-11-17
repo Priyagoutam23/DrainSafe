@@ -171,7 +171,13 @@ router.get("/repeat-failures", async (req, res) => {
         asset_id AS "assetId",
         location,
         MIN(issue) AS issue,
-        COUNT(*)::int AS "reportCount"
+        COUNT(*)::int AS "reportCount",
+        MAX(created_at) AS "lastReportedAt",
+        CASE
+    WHEN COUNT(*) >= 5 THEN 'Critical'
+    WHEN COUNT(*) >= 3 THEN 'High'
+    ELSE 'Monitor'
+END AS priority
       FROM reports
       GROUP BY asset_id, location, LOWER(TRIM(issue))
       HAVING COUNT(*) >= 2

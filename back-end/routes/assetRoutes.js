@@ -166,4 +166,72 @@ router.get("/history", async (req, res) => {
     });
   }
 });
+
+// Create a new drainage asset
+router.post("/", async (req, res) => {
+  // Receive data from frontend
+const { assetId, location, assetType, assetCondition } = req.body;
+ // 2. Validate incoming data
+const allowedConditions = [
+  "Good",
+  "Needs Maintenance",
+  "Critical",
+  "Unknown",
+];
+
+if (
+  typeof assetId !== "string" ||
+  !assetId.trim() ||
+  typeof location !== "string" ||
+  !location.trim() ||
+  typeof assetType !== "string" ||
+  !assetType.trim() ||
+  !allowedConditions.includes(assetCondition)
+) {
+  return res.status(400).json({
+    success: false,
+    message: "Please provide valid asset details.",
+  });
+}
+try {
+  const result = await pool.query(
+    `INSERT INTO assets
+     (asset_id, location, asset_type, asset_condition)
+     VALUES ($1, $2, $3, $4)
+     RETURNING
+       asset_id AS "assetId",
+       location,
+       asset_type AS "assetType",
+       asset_condition AS "assetCondition",
+       created_at AS "createdAt"`,
+    [
+      assetId.trim(),
+      location.trim(),
+      assetType.trim(),
+      assetCondition,
+    ]
+  );
+
+  return res.status(201).json({
+    success: true,
+    message: "Asset registered successfully",
+    data: result.rows[0],
+  });
+
+} catch (error) {
+  console.error("Error registering asset:", error);
+
+  if (error.code === "23505") {
+    return res.status(409).json({
+      success: false,
+      message: "This asset ID already exists.",
+    });
+  }
+
+  return res.status(500).json({
+    success: false,
+    message: "Failed to register asset",
+  });
+}
+});
 module.exports = router;
