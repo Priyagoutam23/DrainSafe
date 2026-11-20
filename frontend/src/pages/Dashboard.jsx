@@ -94,9 +94,22 @@ function Dashboard() {
     (report) => report.status !== "Resolved"
   ).length;
 
+  // Dashboard mein priority counts calculate
   const resolvedReportsCount = reports.filter(
     (report) => report.status === "Resolved"
   ).length;
+   
+  const monitorCount = repeatFailures.filter(
+  (failure) => failure.priority === "Monitor"
+).length;
+
+const highPriorityCount = repeatFailures.filter(
+  (failure) => failure.priority === "High"
+).length;
+
+const criticalPriorityCount = repeatFailures.filter(
+  (failure) => failure.priority === "Critical"
+).length;
 
   return (
     <div>
@@ -143,6 +156,56 @@ function Dashboard() {
         />
       </div>
 
+            {/* Priority Breakdown */}
+      <section className="mt-8">
+        <div className="mb-4">
+          <h2 className="text-lg font-bold text-slate-900">
+            Repeat-Failure Priority Breakdown
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Recurring drainage issues grouped by their current priority.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+            <p className="text-sm font-semibold text-emerald-700">
+              Monitor
+            </p>
+            <p className="mt-2 text-3xl font-bold text-emerald-800">
+              {repeatLoading ? "..." : monitorCount}
+            </p>
+            <p className="mt-1 text-xs text-emerald-700">
+              Recurring issues to monitor
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+            <p className="text-sm font-semibold text-amber-700">
+              High
+            </p>
+            <p className="mt-2 text-3xl font-bold text-amber-800">
+              {repeatLoading ? "..." : highPriorityCount}
+            </p>
+            <p className="mt-1 text-xs text-amber-700">
+              Recurring issues needing attention
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-5">
+            <p className="text-sm font-semibold text-rose-700">
+              Critical
+            </p>
+            <p className="mt-2 text-3xl font-bold text-rose-800">
+              {repeatLoading ? "..." : criticalPriorityCount}
+            </p>
+            <p className="mt-1 text-xs text-rose-700">
+              Highest prototype priority
+            </p>
+          </div>
+        </div>
+      </section>
+      
       {assetsError && (
         <p className="mt-3 text-sm text-rose-700">{assetsError}</p>
       )}
