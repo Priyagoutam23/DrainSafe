@@ -18,6 +18,10 @@ function Maintenance() {
   const [activities, setActivities] = useState([]);
   const [activityLoading, setActivityLoading] = useState(true);
   const [activityError, setActivityError] = useState("");
+  // States for post-cleaning recurrence
+  const [recurrences, setRecurrences] = useState([]);
+  const [recurrenceLoading, setRecurrenceLoading] = useState(true);
+  const [recurrenceError, setRecurrenceError] = useState("");
   // States for registered assets
   const [assets, setAssets] = useState([]);
   const [assetsLoading, setAssetsLoading] = useState(true);
@@ -79,6 +83,31 @@ function Maintenance() {
     };
 
     loadActivities();
+  }, []);
+
+  // Fetch post-cleaning recurrence data
+  useEffect(() => {
+    const loadRecurrences = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/maintenance/recurrence",
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch recurrence data");
+        }
+
+        const result = await response.json();
+        setRecurrences(result.data);
+      } catch (err) {
+        console.error("Error fetching recurrence:", err);
+        setRecurrenceError("Could not load post-cleaning recurrence.");
+      } finally {
+        setRecurrenceLoading(false);
+      }
+    };
+
+    loadRecurrences();
   }, []);
 
   // Fetch registered assets
@@ -145,6 +174,25 @@ function Maintenance() {
 
       const refreshedData = await refreshResponse.json();
       setActivities(refreshedData.data);
+
+      // Refresh recurrence data after new maintenance activity
+      try {
+        const recurrenceResponse = await fetch(
+          "http://localhost:5000/api/maintenance/recurrence",
+        );
+
+        if (!recurrenceResponse.ok) {
+          throw new Error("Failed to refresh recurrence data");
+        }
+
+        const recurrenceResult = await recurrenceResponse.json();
+
+        setRecurrences(recurrenceResult.data);
+        setRecurrenceError("");
+      } catch (err) {
+        console.error("Error refreshing recurrence:", err);
+        setRecurrenceError("Could not refresh recurrence data.");
+      }
 
       setFormSuccess("Maintenance activity created successfully!");
 
@@ -390,6 +438,88 @@ function Maintenance() {
                       {new Date(activity.activityDate).toLocaleDateString(
                         "en-IN",
                       )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+      </section>
+            {/* Post-Cleaning Recurrence */}
+      <section className="mt-8 rounded-xl border border-slate-200 bg-white p-5">
+
+        <h2 className="mb-2 text-lg font-semibold">
+          Post-Cleaning Recurrence
+        </h2>
+
+        <p className="mb-5 text-sm text-slate-500">
+          Identify drainage issues reported again after cleaning.
+        </p>
+
+        {recurrenceLoading ? (
+          <p className="text-sm text-slate-500">
+            Loading recurrence data...
+          </p>
+        ) : recurrenceError ? (
+          <p className="text-sm text-rose-700">
+            {recurrenceError}
+          </p>
+        ) : recurrences.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            No post-cleaning recurrence detected.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b bg-slate-50 text-slate-500">
+                  <th className="p-3">Asset ID</th>
+                  <th className="p-3">Location</th>
+                  <th className="p-3">Issue</th>
+                  <th className="p-3">Last Cleaning</th>
+                  <th className="p-3">Before Cleaning</th>
+                  <th className="p-3">After Cleaning</th>
+                  <th className="p-3">Last Reported</th>
+                  <th className="p-3">Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {recurrences.map((record) => (
+                  <tr
+                    key={`${record.assetId}-${record.issue}-${record.lastCleaningDate}`}
+                    className="border-b last:border-0"
+                  >
+                    <td className="p-3 font-medium">
+                      {record.assetId}
+                    </td>
+
+                    <td className="p-3">{record.location}</td>
+
+                    <td className="p-3">{record.issue}</td>
+
+                    <td className="p-3">
+                      {new Date(record.lastCleaningDate).toLocaleDateString("en-IN")}
+                    </td>
+
+                    <td className="p-3 text-center">
+                      {record.reportsBeforeCleaning}
+                    </td>
+
+                    <td className="p-3 text-center font-semibold text-rose-700">
+                      {record.reportsAfterCleaning}
+                    </td>
+
+                    <td className="p-3">
+                      {new Date(record.lastReportedAfterCleaning).toLocaleDateString("en-IN")}
+                    </td>
+
+                    <td className="p-3">
+                      <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">
+                        {record.recurrenceStatus}
+                      </span>
                     </td>
                   </tr>
                 ))}

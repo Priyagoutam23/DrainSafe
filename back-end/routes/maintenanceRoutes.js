@@ -118,4 +118,89 @@ router.post("/", async (req, res) => {
   }
 });
 
+//new API
+// GET issues reported again after the latest cleaning
+router.get("/recurrence", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      WITH latest_cleaning AS (
+        SELECT DISTINCT ON (asset_id)
+          asset_id,
+          activity_date AS last_cleaning_date
+        FROM maintenance_activities
+        WHERE activity_type = 'Cleaning'
+        ORDER BY asset_id, activity_date DESC, activity_id DESC
+      ),
+
+      issue_recurrence AS (
+        SELECT
+          r.asset_id AS "assetId",
+          a.location,
+          MIN(r.issue) AS issue,
+          lc.last_cleaning_date AS "lastCleaningDate",
+
+          COUNT(*) FILTER (
+            WHERE (r.created_at AT TIME ZONE 'Asia/Kolkata')::date
+                  < lc.last_cleaning_date
+          )::int AS "reportsBeforeCleaning",
+
+          COUNT(*) FILTER (
+            WHERE (r.created_at AT TIME ZONE 'Asia/Kolkata')::date
+                  > lc.last_cleaning_date
+          )::int AS "reportsAfterCleaning",
+
+          MAX(r.created_at) FILTER (
+            WHERE (r.created_at AT TIME ZONE 'Asia/Kolkata')::date
+                  > lc.last_cleaning_date
+          ) AS "lastReportedAfterCleaning"
+
+        FROM reports r
+
+        INNER JOIN latest_cleaning lc
+          ON r.asset_id = lc.asset_id
+
+        INNER JOIN assets a
+          ON r.asset_id = a.asset_id
+
+        GROUP BY
+          r.asset_id,
+          a.location,
+          LOWER(TRIM(r.issue)),
+          lc.last_cleaning_date
+      )
+
+      SELECT
+        "assetId",
+        location,
+        issue,
+        "lastCleaningDate",
+        "reportsBeforeCleaning",
+        "reportsAfterCleaning",
+        "lastReportedAfterCleaning",
+        'Repeated after cleaning' AS "recurrenceStatus"
+
+      FROM issue_recurrence
+
+      WHERE "reportsBeforeCleaning" > 0
+        AND "reportsAfterCleaning" > 0
+
+      ORDER BY "lastReportedAfterCleaning" DESC
+    `);
+
+    res.json({
+      success: true,
+      count: result.rows.length,
+      data: result.rows,
+    });
+
+  } catch (error) {
+    console.error("Error detecting maintenance recurrence:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to detect maintenance recurrence",
+    });
+  }
+});
+
 module.exports = router;
