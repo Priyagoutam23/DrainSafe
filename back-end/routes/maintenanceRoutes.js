@@ -1,13 +1,8 @@
-
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 
-const allowedActivityTypes = [
-  "Cleaning",
-  "Repair",
-  "Inspection",
-];
+const allowedActivityTypes = ["Cleaning", "Repair", "Inspection"];
 
 // GET all maintenance activities
 router.get("/", async (req, res) => {
@@ -32,7 +27,6 @@ router.get("/", async (req, res) => {
       count: result.rows.length,
       data: result.rows,
     });
-
   } catch (error) {
     console.error("Error fetching maintenance activities:", error);
 
@@ -48,8 +42,10 @@ router.post("/", async (req, res) => {
   const { assetId, activityType, description, activityDate } = req.body;
 
   if (
-    typeof assetId !== "string" || !assetId.trim() ||
-    typeof description !== "string" || !description.trim()
+    typeof assetId !== "string" ||
+    !assetId.trim() ||
+    typeof description !== "string" ||
+    !description.trim()
   ) {
     return res.status(400).json({
       success: false,
@@ -88,19 +84,13 @@ router.post("/", async (req, res) => {
          description,
          activity_date AS "activityDate",
          created_at AS "createdAt"`,
-      [
-        assetId.trim(),
-        activityType,
-        description.trim(),
-        activityDate || null,
-      ]
+      [assetId.trim(), activityType, description.trim(), activityDate || null],
     );
 
     res.status(201).json({
       success: true,
       data: result.rows[0],
     });
-
   } catch (error) {
     console.error("Error creating maintenance activity:", error);
 
@@ -177,6 +167,10 @@ router.get("/recurrence", async (req, res) => {
         "reportsBeforeCleaning",
         "reportsAfterCleaning",
         "lastReportedAfterCleaning",
+            (
+      ("lastReportedAfterCleaning" AT TIME ZONE 'Asia/Kolkata')::date
+      - "lastCleaningDate"
+    ) AS "daysToRecurrence",
         'Repeated after cleaning' AS "recurrenceStatus"
 
       FROM issue_recurrence
@@ -192,7 +186,6 @@ router.get("/recurrence", async (req, res) => {
       count: result.rows.length,
       data: result.rows,
     });
-
   } catch (error) {
     console.error("Error detecting maintenance recurrence:", error);
 

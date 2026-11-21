@@ -445,27 +445,19 @@ function Maintenance() {
             </table>
           </div>
         )}
-
       </section>
-            {/* Post-Cleaning Recurrence */}
+      {/* Post-Cleaning Recurrence */}
       <section className="mt-8 rounded-xl border border-slate-200 bg-white p-5">
-
-        <h2 className="mb-2 text-lg font-semibold">
-          Post-Cleaning Recurrence
-        </h2>
+        <h2 className="mb-2 text-lg font-semibold">Post-Cleaning Recurrence</h2>
 
         <p className="mb-5 text-sm text-slate-500">
           Identify drainage issues reported again after cleaning.
         </p>
 
         {recurrenceLoading ? (
-          <p className="text-sm text-slate-500">
-            Loading recurrence data...
-          </p>
+          <p className="text-sm text-slate-500">Loading recurrence data...</p>
         ) : recurrenceError ? (
-          <p className="text-sm text-rose-700">
-            {recurrenceError}
-          </p>
+          <p className="text-sm text-rose-700">{recurrenceError}</p>
         ) : recurrences.length === 0 ? (
           <p className="text-sm text-slate-500">
             No post-cleaning recurrence detected.
@@ -482,7 +474,9 @@ function Maintenance() {
                   <th className="p-3">Before Cleaning</th>
                   <th className="p-3">After Cleaning</th>
                   <th className="p-3">Last Reported</th>
+                  <th className="p-3">Days to Recurrence</th>
                   <th className="p-3">Status</th>
+                  
                 </tr>
               </thead>
 
@@ -492,16 +486,16 @@ function Maintenance() {
                     key={`${record.assetId}-${record.issue}-${record.lastCleaningDate}`}
                     className="border-b last:border-0"
                   >
-                    <td className="p-3 font-medium">
-                      {record.assetId}
-                    </td>
+                    <td className="p-3 font-medium">{record.assetId}</td>
 
                     <td className="p-3">{record.location}</td>
 
                     <td className="p-3">{record.issue}</td>
 
                     <td className="p-3">
-                      {new Date(record.lastCleaningDate).toLocaleDateString("en-IN")}
+                      {new Date(record.lastCleaningDate).toLocaleDateString(
+                        "en-IN",
+                      )}
                     </td>
 
                     <td className="p-3 text-center">
@@ -513,7 +507,13 @@ function Maintenance() {
                     </td>
 
                     <td className="p-3">
-                      {new Date(record.lastReportedAfterCleaning).toLocaleDateString("en-IN")}
+                      {new Date(
+                        record.lastReportedAfterCleaning,
+                      ).toLocaleDateString("en-IN")}
+                    </td>
+                   
+                    <td className="p-3 text-center font-semibold text-rose-700">
+                      {record.daysToRecurrence} days
                     </td>
 
                     <td className="p-3">
