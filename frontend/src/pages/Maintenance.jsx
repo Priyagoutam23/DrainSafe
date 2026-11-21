@@ -140,6 +140,33 @@ function Maintenance() {
 
   const assetIds = [...new Set(history.map((record) => record.assetId))];
 
+// Calculate asset-wise maintenance effectiveness
+const assetAnalytics = Object.values(
+  recurrences.reduce((acc, record) => {
+    const assetId = record.assetId;
+
+    if (!acc[assetId]) {
+      acc[assetId] = {
+        assetId: assetId,
+        location: record.location,
+        recurrenceGroups: 0,
+        totalDays: 0,
+      };
+    }
+
+    acc[assetId].recurrenceGroups += 1;
+    acc[assetId].totalDays += Number(record.daysToRecurrence);
+
+    return acc;
+  }, {})
+).map((asset) => ({
+  ...asset,
+  averageDaysToRecurrence: Number(
+    (asset.totalDays / asset.recurrenceGroups).toFixed(1)
+  ),
+})).sort(
+  (a, b) => a.averageDaysToRecurrence - b.averageDaysToRecurrence
+);
   //Create handleSubmit function
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -524,6 +551,71 @@ function Maintenance() {
                   </tr>
                 ))}
               </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+            {/* Asset-wise Maintenance Effectiveness */}
+      <section className="mt-8 rounded-xl border border-slate-200 bg-white p-5">
+
+        <h2 className="mb-2 text-lg font-semibold">
+          Asset-wise Maintenance Effectiveness
+        </h2>
+
+        <p className="mb-5 text-sm text-slate-500">
+          Compare how quickly recurring issues return across drainage assets.
+        </p>
+
+        {recurrenceLoading ? (
+          <p className="text-sm text-slate-500">
+            Calculating asset analytics...
+          </p>
+        ) : recurrenceError ? (
+          <p className="text-sm text-rose-700">
+            {recurrenceError}
+          </p>
+        ) : assetAnalytics.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            No asset analytics available yet.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+
+              <thead>
+                <tr className="border-b bg-slate-50 text-slate-500">
+                  <th className="p-3">Asset ID</th>
+                  <th className="p-3">Location</th>
+                  <th className="p-3">Recurring Issue Groups</th>
+                  <th className="p-3">Average Days to Recurrence</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {assetAnalytics.map((asset) => (
+                  <tr key={asset.assetId} className="border-b last:border-0">
+
+                    <td className="p-3 font-medium">
+                      {asset.assetId}
+                    </td>
+
+                    <td className="p-3">
+                      {asset.location}
+                    </td>
+
+                    <td className="p-3 text-center">
+                      {asset.recurrenceGroups}
+                    </td>
+
+                    <td className="p-3 font-semibold text-rose-700">
+                      {asset.averageDaysToRecurrence} days
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+
             </table>
           </div>
         )}
